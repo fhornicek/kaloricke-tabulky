@@ -138,3 +138,44 @@ function getCookie(name) {
 
 
 
+
+
+const searchInput = document.getElementById('searchInput');
+const autocompleteList = document.getElementById('autocompleteList');
+
+function debounce(fn, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), delay);
+    };
+}
+
+searchInput.addEventListener('input', debounce(async () => {
+    const query = searchInput.value.trim();
+    if (query.length < 3) {
+        autocompleteList.innerHTML = '';
+        return;
+    }
+
+    const response = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${query}&search_simple=1&action=process&json=1`);
+    const data = await response.json();
+
+    const suggestions = data.products.slice(0, 5).filter(p => p.product_name);
+
+    autocompleteList.innerHTML = '';
+
+    suggestions.forEach(product => {
+        const li = document.createElement('li');
+        li.textContent = product.product_name;
+        li.className = 'px-4 py-2 hover:bg-purple-200 cursor-pointer';
+
+        li.addEventListener('click', () => {
+            searchInput.value = product.product_name;
+            autocompleteList.innerHTML = '';
+        });
+
+        autocompleteList.appendChild(li);
+    });
+}, 300)); // debounce na 300 ms
+
