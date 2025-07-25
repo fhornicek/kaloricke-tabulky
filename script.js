@@ -56,9 +56,9 @@ function saveFood(weightcalories, protein, carb, fat) {
 }
 
 function showMacros(protein, carb, fat) {
-    const targetProtein = 150;
-    const targetCarb = 250;
-    const targetFat = 70;
+    const targetProtein = getCookie('targetProtein') || 150;
+    const targetCarb = getCookie('targetCarb') || 250;
+    const targetFat = getCookie('targetFat') || 70;
 
     const proteinPercent = Math.min(protein / targetProtein, 1);
     const carbPercent = Math.min(carb / targetCarb, 1);
@@ -179,7 +179,7 @@ function removeFood(indexToRemove) {
     if (!cookies) return;
 
     let foodData = decodeURIComponent(cookies.split('=')[1]).split(',');
-    foodData.splice(indexToRemove, 1); // smaže jeden záznam
+    foodData.splice(indexToRemove, 1); 
 
     document.cookie = `food=${encodeURIComponent(foodData.join(','))}; path=/; max-age=3600`;
 }

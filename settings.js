@@ -11,20 +11,28 @@ function getCookie(name) {
   
   window.addEventListener('DOMContentLoaded', () => {
     const targetInput = document.getElementById('targetCal');
+    const proteinInput = document.getElementById('targetProtein');
+    const carbsInput = document.getElementById('targetCarbs');
+    const fatInput = document.getElementById('targetFat');
     const saveButton = document.getElementById('saveButton');
   
+    // Předvyplnění uložených hodnot
     const savedTarget = getCookie('targetCal');
-    if (savedTarget) {
-      targetInput.value = savedTarget;
-    }
+    const savedProtein = getCookie('targetProtein');
+    const savedCarbs = getCookie('targetCarbs');
+    const savedFat = getCookie('targetFat');
+  
+    if (savedTarget) targetInput.value = savedTarget;
+    if (savedProtein) proteinInput.value = savedProtein;
+    if (savedCarbs) carbsInput.value = savedCarbs;
+    if (savedFat) fatInput.value = savedFat;
   
     saveButton.addEventListener('click', () => {
-      const value = targetInput.value;
-      if (value) {
-        saveTargetCal(value);
-        alert('Cílové kalorie byly uloženy!');
-      } else {
-        alert('Prosím, zadejte platnou hodnotu.');
-      }
+      if (targetInput.value) saveTargetCal(targetInput.value);
+      if (proteinInput.value) document.cookie = `targetProtein=${proteinInput.value}; path=/`;
+      if (carbsInput.value) document.cookie = `targetCarbs=${carbsInput.value}; path=/`;
+      if (fatInput.value) document.cookie = `targetFat=${fatInput.value}; path=/`;
+  
+      alert('Cíle byly uloženy!');
     });
   });
