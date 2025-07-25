@@ -1,44 +1,112 @@
 document.addEventListener('DOMContentLoaded', () => {
     renderFoodList();
     showcalories(0);
+    recalculateMacros();
 });
 
 const addButton = document.getElementById('addButton');
     addButton.addEventListener('click', searchFood);
 
-function searchFood() {
- const searchInput = document.getElementById('searchInput')
-    const searchQuery = searchInput.value.toLowerCase();
-    fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${searchQuery}&search_simple=1&action=process&json=1`)
-    .then(response => response.json())
-    .then(data => {
-        const produkt = data.products[0];
-        const weight = document.getElementById('weight');
-        console.log("Celý produkt:", produkt);
-        if (produkt && produkt.nutriments && produkt.nutriments["energy-kcal_100g"]) {
-           const kalorie = produkt.nutriments["energy-kcal_100g"];
-           const weightcalories = (kalorie / 100) * weight.value;
-           saveFood(weightcalories);
-        } else {
-           console.log("Produkt nenalezen nebo nemá kalorické údaje.");
-        }
-})
-}
+    function searchFood() {
+        const searchInput = document.getElementById('searchInput');
+        const searchQuery = searchInput.value.toLowerCase();
+        const weight = document.getElementById('weight').value;
+    
+        fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${searchQuery}&search_simple=1&action=process&json=1`)
+        .then(response => response.json())
+        .then(data => {
+            const produkt = data.products[0];
+            if (produkt && produkt.nutriments) {
+                const nutr = produkt.nutriments;
+    
+                const cal = nutr["energy-kcal_100g"];
+                const protein = nutr["proteins_100g"];
+                const carbs = nutr["carbohydrates_100g"];
+                const fat = nutr["fat_100g"];
+    
+                if (cal !== undefined) {
+                    const kcal = (cal / 100) * weight;
+                    const proteinG = (protein / 100) * weight || 0;
+                    const carbsG = (carbs / 100) * weight || 0;
+                    const fatG = (fat / 100) * weight || 0;
+    
+                    saveFood(kcal, proteinG, carbsG, fatG);
+                    recalculateMacros();
+                } else {
+                    console.log("Produkt nemá kalorické údaje.");
+                }
+            } else {
+                console.log("Produkt nenalezen nebo chybí nutriments.");
+            }
+        });
+    }
 
-function saveFood(weightcalories) {
+function saveFood(weightcalories, protein, carb, fat) {
     const searchInput = document.getElementById('searchInput').value.trim();
-    const newEntry = `${searchInput} + ${weightcalories}`;
-
+    const newEntry = `${searchInput} + ${weightcalories} + ${protein} + ${carb} + ${fat}`;
 
     const cookies = document.cookie.split('; ').find(row => row.startsWith('food='));
     const oldValue = cookies ? decodeURIComponent(cookies.split('=')[1]) : '';
 
-
     const updatedValue = oldValue ? `${oldValue},${newEntry}` : newEntry;
 
-
     document.cookie = `food=${encodeURIComponent(updatedValue)}; path=/; max-age=3600`;
+
     renderFoodList();
+}
+
+function showMacros(protein, carb, fat) {
+    const targetProtein = 150;
+    const targetCarb = 250;
+    const targetFat = 70;
+
+    const proteinPercent = Math.min(protein / targetProtein, 1);
+    const carbPercent = Math.min(carb / targetCarb, 1);
+    const fatPercent = Math.min(fat / targetFat, 1);
+
+    const circleMap = [
+        { id: 'proteinCircle', percent: proteinPercent, color: '#7E22CE', value: protein, textId: 'protein' },
+        { id: 'carbCircle', percent: carbPercent, color: '#22c55e', value: carb, textId: 'carb' },
+        { id: 'fatCircle', percent: fatPercent, color: '#facc15', value: fat, textId: 'fat' }
+    ];
+
+    circleMap.forEach(item => {
+        const circle = document.getElementById(item.id);
+        const angle = item.percent * 360;
+        circle.style.background = `conic-gradient(${item.color} ${angle}deg, #3F3F46 ${angle}deg)`;
+
+        const textElement = document.getElementById(item.textId);
+        textElement.innerText = `${Math.round(item.value)}g`;
+    });
+}
+
+function recalculateMacros() {
+    const cookies = document.cookie.split('; ').find(row => row.startsWith('food='));
+    if (!cookies) {
+        showMacros(0, 0, 0);
+        return;
+    }
+
+    let totalProtein = 0;
+    let totalCarb = 0;
+    let totalFat = 0;
+
+    const foodData = decodeURIComponent(cookies.split('=')[1]).split(',');
+
+    foodData.forEach(item => {
+        const [ , , protein, carb, fat ] = item.split(' + ').map(v => parseFloat(v));
+        if (!isNaN(protein)) totalProtein += protein;
+        if (!isNaN(carb)) totalCarb += carb;
+        if (!isNaN(fat)) totalFat += fat;
+    });
+
+    showMacros(totalProtein, totalCarb, totalFat);
+}
+
+function updateMacros(protein, carbs, fats) {
+    document.getElementById('protein').textContent = protein.toFixed(1) + ' g';
+    document.getElementById('carb').textContent = carbs.toFixed(1) + ' g';
+    document.getElementById('fat').textContent = fats.toFixed(1) + ' g';
 }
 
 function renderFoodList() {
@@ -73,6 +141,7 @@ function renderFoodList() {
             removeFood(index);      
             li.remove();            
             recalculateCalories();  
+            recalculateMacros();
         };
 
         li.appendChild(nameSpan);
