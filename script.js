@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     renderFoodList();
+    showcalories(0);
 });
 
 const addButton = document.getElementById('addButton');
@@ -168,7 +169,7 @@ searchInput.addEventListener('input', debounce(async () => {
     suggestions.forEach(product => {
         const li = document.createElement('li');
         li.textContent = product.product_name;
-        li.className = 'px-4 py-2 hover:bg-purple-200 cursor-pointer';
+        li.className = 'outline-1 outline-gray-400 px-4 py-2 hover:bg-purple-200 cursor-pointer';
 
         li.addEventListener('click', () => {
             searchInput.value = product.product_name;
@@ -177,5 +178,5 @@ searchInput.addEventListener('input', debounce(async () => {
 
         autocompleteList.appendChild(li);
     });
-}, 300)); // debounce na 300 ms
+}, 300));
 
